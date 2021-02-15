@@ -1,0 +1,30 @@
+Inlined(
+    EmptyTree,
+    List(),
+    Apply(
+        Select(
+            Ident(bob),
+            copy
+        ),
+        List(
+            NamedArg(
+                firstName,
+                Apply(
+                    Select(
+                        Ident(Name),
+                        apply
+                    ),
+                    List(
+                        Literal(
+                            Constant(XD)
+                        )
+                    )
+                )
+            ),
+            Select(
+                Ident(bob),
+                copy$default$2
+            )
+        )
+    )
+)
