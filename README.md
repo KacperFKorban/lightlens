@@ -1,9 +1,15 @@
-## sbt project compiled with Dotty
+# notsoquicklens
 
-### Usage
+(Experimantal) implementation of lightweight lenses for Scala 3.
 
-This is a normal sbt project, you can compile code with `sbt compile` and run it
-with `sbt run`, `sbt console` will start a Dotty REPL.
+Example:
+```scala
+import org.kacperfkorban.notsoquicklens.*
 
-For more information on the sbt-dotty plugin, see the
-[dotty-example-project](https://github.com/lampepfl/dotty-example-project/blob/master/README.md).
+case class Name(name: String)
+case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int)
+
+val bob = Person(Name("Bob"), 25, "2137", 3)
+
+modify(bob)(_.firstName.name)(_ => "XD")
+```
