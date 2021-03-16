@@ -2,7 +2,9 @@
 
 (Experimantal) implementation of lightweight lenses for Scala 3.
 
-Example:
+The goal of this project is to provide easy to use lenses functionality by adding one import statement.
+
+# Example:
 ```scala
 import org.kacperfkorban.notsoquicklens.*
 
@@ -13,3 +15,8 @@ val bob = Person(Name("Bob"), 25, "2137", 3)
 
 modify(bob)(_.firstName.name)(_ => "XD")
 ```
+
+# Inspiration
+- https://hackage.haskell.org/package/lens
+- https://github.com/softwaremill/quicklens
+- https://github.com/optics-dev/Monocle
