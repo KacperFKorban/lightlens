@@ -6,7 +6,7 @@ The goal of this project is to provide easy to use lenses functionality by addin
 
 # Example:
 ```scala
-import org.kacperfkorban.notsoquicklens.*
+import notsoquicklens.*
 
 case class Name(name: String)
 case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int)
