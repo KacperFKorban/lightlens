@@ -3,22 +3,22 @@ package lightlens
 import scala.quoted.*
 
 extension [S, A](obj: S)
-  inline def focus(inline f: S => A): ObjectModifyPath[S, A] = {
+  inline def focus(inline f: S => A): ModificationByPath[S, A] = {
     ${modifyImpl('obj, 'f)}
   }
 
-case class ObjectModifyPath[S, A](f: (A => A) => S) {
+case class ModificationByPath[S, A](f: (A => A) => S) {
   def modify(mod: A => A): S = f.apply(mod)
   def set(v: A): S = f.apply(Function.const(v))
 }
 
 private val shapeInfo = "focus must have shape: _.field1.field2.field3"
 
-def toObjectModifyPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ObjectModifyPath[S, A]] = '{ ObjectModifyPath( ${f} ) }
+def toModificationByPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ModificationByPath[S, A]] = '{ ModificationByPath( ${f} ) }
 
 def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('x) } }
 
-def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[ObjectModifyPath[S, A]] = {
+def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[ModificationByPath[S, A]] = {
   import qctx.reflect.*
   
   def fromTree(tree: Tree, acc: Seq[String] = Seq.empty): Seq[String] = {
@@ -75,5 +75,5 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
   }
   
   val res: (Expr[A => A] => Expr[S]) = (mod: Expr[A => A]) => mapToCopy(mod, objTerm, path).asExpr.asInstanceOf[Expr[S]]
-  toObjectModifyPath(to(res))
+  toModificationByPath(to(res))
 }
