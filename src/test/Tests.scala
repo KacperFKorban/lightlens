@@ -66,6 +66,27 @@ class MySuite extends munit.FunSuite with Fixture {
     )
     assertEquals(obtained, expected)
   }
+
+  test("Give compilation error for function focus") {
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_ => 2).set(100)"
+    assert(
+      compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
+    )
+  }
+
+  test("Give compilation error for non accessor method focus") {
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_.asInstanceOf[Long]).set(100)"
+    assert(
+      compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
+    )
+  }
+
+  test("Give compilation error for non accessor method focus mixed with field accessor") {
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_.value.toLong).set(100)"
+    assert(
+      compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
+    )
+  }
 }
 
 trait Fixture {
