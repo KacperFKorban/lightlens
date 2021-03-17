@@ -1,16 +1,25 @@
-package org.kacperfkorban
-
 import scala.quoted.*
 
 package object notsoquicklens {
 
+  extension [S, A](obj: S)
+    inline def focus(inline f: S => A): ObjectModifyPath[S, A] = {
+      ${modifyImpl('obj, 'f)}
+    }
+
+  case class ObjectModifyPath[S, A](f: (A => A) => S) {
+    def modify(mod: A => A): S = f.apply(mod)
+  }
+
   private val shapeInfo = "focus must have shape: _.field1.field2.field3"
 
-  inline def modify[S, A](inline obj: S)(inline focus: S => A)(mod: A => A): Any = ${modifyImpl('obj, 'focus, 'mod)}
+  def toObjectModifyPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ObjectModifyPath[S, A]] = '{ ObjectModifyPath( ${f} ) }
 
-  def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A], mod: Expr[A => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[Any] = {
+  def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('x) } }
+
+  def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[ObjectModifyPath[S, A]] = {
     import qctx.reflect.*
-
+    
     def fromTree(tree: Tree, acc: Seq[String] = Seq.empty): Seq[String] = {
       tree match {
         case s@Select(deep, ident) =>
@@ -21,7 +30,7 @@ package object notsoquicklens {
           Seq.empty
       }
     }
-    
+
     def termMethodByNameUnsafe(term: Term, name: String): Symbol = {
       term.tpe.typeSymbol.declaredMethod(name).head
     }
@@ -32,10 +41,7 @@ package object notsoquicklens {
       (caseFields.find(_.name == name).get, idx+1)
     }
 
-    // person
-    // person.copy(parent = f(person.parent))
-    // person.copy(parent = person.parent.copy(name = person.parent.name.copy(value = f(person.parent.name.value))))
-    def mapToCopy[X](objTerm: Term, path: Seq[String]): Term = path match
+    def mapToCopy[X](mod: Expr[A => A], objTerm: Term, path: Seq[String]): Term = path match
       case Nil =>
         val apply = termMethodByNameUnsafe(mod.asTerm, "apply")
         Apply(Select(mod.asTerm, apply), List(objTerm))
@@ -49,27 +55,25 @@ package object notsoquicklens {
         Apply(
           Select(objTerm, copy),
           List(
-            NamedArg(field, mapToCopy(Select(objTerm, fieldMethod), tail))
+            NamedArg(field, mapToCopy(mod, Select(objTerm, fieldMethod), tail))
           ) ++ defaults
         )
+    
+    val focusTree: Tree = focus.asTerm
+    val path = focusTree match {
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(p))), _)) =>
+        fromTree(p)
+      case _ =>
+        report.error(shapeInfo)
+        Seq.empty
+    }
 
     val objTree: Tree = obj.asTerm
     val objTerm: Term = objTree match {
       case Inlined(_, _, term) => term
     }
-
-    val focusTree: Tree = focus.asTerm
-    val (path, pathSelects) = focusTree match {
-      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(p))), _)) =>
-        (fromTree(p), p)
-      case _ =>
-        report.error(shapeInfo)
-        (Seq.empty, null) // TODO Oopsie
-    }
-
-    val modTree: Tree = mod.asTerm
     
-    val res = mapToCopy(objTerm, path)
-    res.asExpr.asInstanceOf[Expr[Any]]
+    val res: (Expr[A => A] => Expr[S]) = (mod: Expr[A => A]) => mapToCopy(mod, objTerm, path).asExpr.asInstanceOf[Expr[S]]
+    toObjectModifyPath(to(res))
   }
 }

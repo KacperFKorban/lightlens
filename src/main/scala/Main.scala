@@ -1,5 +1,5 @@
 
-import org.kacperfkorban.notsoquicklens.*
+import notsoquicklens.*
 
 object Main extends App {
 
@@ -8,8 +8,6 @@ object Main extends App {
 
   val bob = Person(Name("Bob"), 25, "2137", 3)
 
-  val newBob = modify(bob)(_.firstName.name)(_ => "XD")
-
-  println(newBob)
+  println(bob.focus(_.firstName.name).modify(_.toLowerCase))
 
 }
