@@ -9,6 +9,7 @@ package object notsoquicklens {
 
   case class ObjectModifyPath[S, A](f: (A => A) => S) {
     def modify(mod: A => A): S = f.apply(mod)
+    def set(v: A): S = f.apply(Function.const(v))
   }
 
   private val shapeInfo = "focus must have shape: _.field1.field2.field3"
