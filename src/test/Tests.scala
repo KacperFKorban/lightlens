@@ -27,17 +27,66 @@ class MySuite extends munit.FunSuite with Fixture {
     )
     assertEquals(obtained, expected)
   }
+
+  test("Set twice nested field") {
+    val obtained = eminem.focus(_.names.firstName).set("Bruce")
+    val expected = eminem.copy(
+      names = eminem.names.copy(
+        firstName = "Bruce"
+      )
+    )
+    assertEquals(obtained, expected)
+  }
+
+  test("Modify deeply nested field") {
+    val obtained = forgotAboutDre.focus(_.author.address.country.name).modify(_.toLowerCase)
+    val expected = forgotAboutDre.copy(
+      author = forgotAboutDre.author.copy(
+        address = forgotAboutDre.author.address.copy(
+          country = forgotAboutDre.author.address.country.copy(
+            name = forgotAboutDre.author.address.country.name.toLowerCase
+          )
+        )
+      )
+    )
+    assertEquals(obtained, expected)
+  }
+
+  test("Set deeply nested field") {
+    val usa = "United States of America"
+    val obtained = forgotAboutDre.focus(_.author.address.country.name).set(usa)
+    val expected = forgotAboutDre.copy(
+      author = forgotAboutDre.author.copy(
+        address = forgotAboutDre.author.address.copy(
+          country = forgotAboutDre.author.address.country.copy(
+            name = usa
+          )
+        )
+      )
+    )
+    assertEquals(obtained, expected)
+  }
 }
 
 trait Fixture {
-  enum Country:
-    case Poland
-    case Sweden
-    case England
-    case USA
-  case class Names(firstName: String, lastName: String)
+
+  enum Continent:
+    case Europe
+    case Australia
+    case NorthAmerica
+    case SouthAmerica
+    case Africa
+    case Asia
+    case Antarctica
+
+  case class Country(name: String, continent: Continent)
+
   case class Address(country: Country, city: String)
+
+  case class Names(firstName: String, lastName: String)
+
   case class Person(names: Names, age: Int, address: Address)
+
   case class Song(title: String, author: Person, features: List[Person])
 
   val eminem = Person(
@@ -47,7 +96,10 @@ trait Fixture {
     ),
     age = 48,
     address = Address(
-      country = Country.USA,
+      country = Country(
+        name = "USA",
+        continent = Continent.NorthAmerica
+      ),
       city = "Detroit"
     )
   )
@@ -59,7 +111,10 @@ trait Fixture {
     ),
     age = 56,
     address = Address(
-      country = Country.USA,
+      country = Country(
+        name = "USA",
+        continent = Continent.NorthAmerica
+      ),
       city = "Compton"
     )
   )
