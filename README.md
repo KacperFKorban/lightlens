@@ -1,4 +1,4 @@
-# notsoquicklens
+# lightlens
 
 (Experimantal) implementation of lightweight lenses for Scala 3.
 
@@ -6,7 +6,7 @@ The goal of this project is to provide easy to use lenses functionality by addin
 
 # Example:
 ```scala
-import notsoquicklens.*
+import lightlens.*
 
 case class Name(name: String)
 case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int)
