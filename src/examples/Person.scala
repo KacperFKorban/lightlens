@@ -1,5 +1,4 @@
-
-import notsoquicklens.*
+import lightlens.*
 
 object Main extends App {
 
@@ -8,6 +7,6 @@ object Main extends App {
 
   val bob = Person(Name("Bob"), 25, "2137", 3)
 
-  println(bob.focus(_.firstName.name).modify(_.toLowerCase))
+  bob.focus(_.age).modify(_ + 1)
 
 }
