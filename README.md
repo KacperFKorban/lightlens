@@ -13,7 +13,7 @@ case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int)
 
 val bob = Person(Name("Bob"), 25, "2137", 3)
 
-modify(bob)(_.firstName.name)(_ => "XD")
+bob.focus(_.firstName.name).modify(_.toLowerCase)
 ```
 
 # Inspiration
