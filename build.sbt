@@ -10,6 +10,10 @@ ThisBuild / developers := List(
   )
 )
 
+ThisBuild / description := "(Experimental) implementation of lightweight lenses for Scala 3"
+ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / homepage := Some(url("https://github.com/KacperFKorban/lightlens"))
+
 lazy val core = project
   .in(file(".core"))
   .settings(
