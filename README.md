@@ -24,6 +24,6 @@ bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase)
 ```
 
 # Inspiration
-- https://hackage.haskell.org/package/lens
+- https://github.com/ekmett/lens
 - https://github.com/softwaremill/quicklens
 - https://github.com/optics-dev/Monocle
