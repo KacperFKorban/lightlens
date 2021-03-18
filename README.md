@@ -14,11 +14,13 @@ case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int, additi
 
 val bob = Person(Name("Bob"), 25, "12345", 3, AdditionalInfo(List(Name("Mark"), Name("Anna"))))
 
-bob.focus(_.age).set(60) // Person(Name(Bob),60,12345,3,AdditionalInfo(List(Name(Mark), Name(Anna))))
-//                                           ^^
+bob.focus(_.age).set(60)
+// Person(Name(Bob),60,12345,3,AdditionalInfo(List(Name(Mark), Name(Anna))))
+//                  ^^
 
-bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase) // Person(Name(Bob),25,12345,3,AdditionalInfo(List(Name(mark), Name(anna))))
-//                                                                                                                            ^           ^
+bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase)
+// Person(Name(Bob),25,12345,3,AdditionalInfo(List(Name(mark), Name(anna))))
+//                                                      ^           ^
 ```
 
 # Inspiration
