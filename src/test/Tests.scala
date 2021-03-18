@@ -87,6 +87,55 @@ class MySuite extends munit.FunSuite with Fixture {
       compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
     )
   }
+
+  test("Be able to use mapped") {
+    val usa = "United States of America"
+    val obtained = forgotAboutDre.focus(_.features.mapped.address.country.name).set(usa)
+    val expected = forgotAboutDre.copy(
+      features = forgotAboutDre.features.map { x =>
+        x.copy(
+          address = x.address.copy(
+            country = x.address.country.copy(
+              name = usa
+            )
+          )
+        )
+      }
+    )
+    assertEquals(obtained, expected)
+  }
+
+  test("Be able to use top level mapped") {
+    val obtained = List(eminem, drDre).focus(_.mapped.age).modify(_ - 20)
+    val expected = List(eminem, drDre).map { p =>
+      p.copy(
+        age = p.age - 20
+      )
+    }
+    assertEquals(obtained, expected)
+  }
+
+  test("Use a complicated function in modify") {
+    val obtained = List(eminem, drDre).focus(_.mapped.age).modify { age =>
+      def primesBefore(n: Int) = {
+        def isPrime(n: Int) = 2.until(n).forall(n % _ != 0)
+        1.to(n).filter(isPrime)
+      }
+      primesBefore(age).length
+    }
+    val expected = List(eminem, drDre).map { p =>
+      p.copy(
+        age = {
+          def primesBefore(n: Int) = {
+            def isPrime(n: Int) = 2.until(n).forall(n % _ != 0)
+            1.to(n).filter(isPrime)
+          }
+          primesBefore(p.age).length
+        }
+      )
+    }
+    assertEquals(obtained, expected)
+  }
 }
 
 trait Fixture {

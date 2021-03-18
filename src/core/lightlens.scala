@@ -14,6 +14,8 @@ case class ModificationByPath[S, A](f: (A => A) => S) {
 
 private val shapeInfo = "focus must have shape: _.field1.mapped.field3"
 
+private val specialAccessors = List("mapped")
+
 def toModificationByPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ModificationByPath[S, A]] = '{ ModificationByPath( ${f} ) }
 
 def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('x) } }
@@ -39,13 +41,11 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
     tree match {
       case s@Select(deep, ident) =>
         toPath(deep) :+ Field(ident)
-      case Apply(Apply(TypeApply(_, typeTrees), idents), List(ident: Ident)) =>
+      case Apply(Apply(TypeApply(Ident(s), typeTrees), idents), List(ident: Ident)) if specialAccessors.contains(s) =>
         idents.flatMap(toPath) :+ PathSymbol.specialSymbolByName(ident, ident.asInstanceOf[Ident].name, typeTrees.last)
       case a@Apply(deep, idents) =>
         toPath(deep) ++ idents.flatMap(toPath)
-      case i: Ident =>
-        Seq.empty
-      case _: TypeApply =>
+      case i: Ident if i.name.startsWith("_") =>
         Seq.empty
       case _ =>
         report.error(shapeInfo)
