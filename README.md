@@ -9,11 +9,16 @@ The goal of this project is to provide easy to use lenses functionality by addin
 import lightlens.*
 
 case class Name(name: String)
-case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int)
+case class AdditionalInfo(friends: List[Name])
+case class Person(firstName: Name, age: Int, id: String, siblingsNo: Int, additionalInfo: AdditionalInfo)
 
-val bob = Person(Name("Bob"), 25, "2137", 3)
+val bob = Person(Name("Bob"), 25, "12345", 3, AdditionalInfo(List(Name("Mark"), Name("Anna"))))
 
-bob.focus(_.firstName.name).modify(_.toLowerCase)
+bob.focus(_.age).set(60) // Person(Name(Bob),60,12345,3,AdditionalInfo(List(Name(Mark), Name(Anna))))
+//                                           ^^
+
+bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase) // Person(Name(Bob),25,12345,3,AdditionalInfo(List(Name(mark), Name(anna))))
+//                                                                                                                            ^           ^
 ```
 
 # Inspiration
