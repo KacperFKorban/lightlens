@@ -5,7 +5,7 @@ trait FunctorLens[F[_]] {
 }
 
 extension [F[_]: FunctorLens, A](fa: F[A])
-  def mapped: A = ???
+  def each: A = ???
 
 object FunctorLens {
   given FunctorLens[List] with {

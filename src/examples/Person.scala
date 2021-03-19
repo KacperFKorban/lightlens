@@ -10,6 +10,6 @@ object Main extends App {
 
   println(bob.focus(_.age).set(60))
 
-  println(bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase))
+  println(bob.focus(_.additionalInfo.friends.each.name).modify(_.toLowerCase))
 
 }

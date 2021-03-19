@@ -12,9 +12,9 @@ case class ModificationByPath[S, A](f: (A => A) => S) {
   def set(v: A): S = f.apply(Function.const(v))
 }
 
-private val shapeInfo = "focus must have shape: _.field1.mapped.field3"
+private val shapeInfo = "focus must have shape: _.field1.each.field3"
 
-private val specialAccessors = List("mapped")
+private val specialAccessors = List("each")
 
 def toModificationByPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ModificationByPath[S, A]] = '{ ModificationByPath( ${f} ) }
 
@@ -25,11 +25,11 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
 
   enum PathSymbol:
     case Field(name: String)
-    case Mapped(givn: Term, typeTree: TypeTree)
+    case Each(givn: Term, typeTree: TypeTree)
 
   object PathSymbol {
     def specialSymbolByName(term: Term, name: String, typeTree: TypeTree): PathSymbol = {
-      if(name.contains("FunctorLens")) Mapped(term, typeTree)
+      if(name.contains("FunctorLens")) Each(term, typeTree)
       else
         report.error(shapeInfo)
         ???
@@ -80,7 +80,7 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
         Select(objTerm, copy),
         args
       )
-    case (m: Mapped) :: tail =>
+    case (m: Each) :: tail =>
       val defdefSymbol = Symbol.newMethod(
         Symbol.spliceOwner,
         "$anonfun",

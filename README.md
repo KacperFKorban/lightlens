@@ -18,7 +18,7 @@ bob.focus(_.age).set(60)
 // Person(Name(Bob),60,12345,AdditionalInfo(List(Name(Mark), Name(Anna)),3))
 //                  ^^
 
-bob.focus(_.additionalInfo.friends.mapped.name).modify(_.toLowerCase)
+bob.focus(_.additionalInfo.friends.each.name).modify(_.toLowerCase)
 // Person(Name(Bob),25,12345,AdditionalInfo(List(Name(mark), Name(anna)),3))
 //                                                    ^           ^
 ```
