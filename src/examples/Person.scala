@@ -8,8 +8,8 @@ object Main extends App {
 
   val bob = Person(Name("Bob"), 25, "12345", AdditionalInfo(List(Name("Mark"), Name("Anna")), 3))
 
-  println(bob.focus(_.age).set(60))
+  println(bob.modify(_.age).setTo(60))
 
-  println(bob.focus(_.additionalInfo.friends.each.name).modify(_.toLowerCase))
+  println(bob.modify(_.additionalInfo.friends.each.name).using(_.toLowerCase))
 
 }

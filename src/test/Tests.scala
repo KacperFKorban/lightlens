@@ -3,7 +3,7 @@ class MySuite extends munit.FunSuite with Fixture {
   import lightlens.*
 
   test("Modify once nested field") {
-    val obtained = eminem.focus(_.age).modify(_ + 1)
+    val obtained = eminem.modify(_.age).using(_ + 1)
     val expected = eminem.copy(
       age = eminem.age + 1
     )
@@ -11,7 +11,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Set once nested field") {
-    val obtained = eminem.focus(_.age).set(20)
+    val obtained = eminem.modify(_.age).setTo(20)
     val expected = eminem.copy(
       age = 20
     )
@@ -19,7 +19,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Modify twice nested field") {
-    val obtained = eminem.focus(_.names.firstName).modify(_.toLowerCase)
+    val obtained = eminem.modify(_.names.firstName).using(_.toLowerCase)
     val expected = eminem.copy(
       names = eminem.names.copy(
         firstName = eminem.names.firstName.toLowerCase
@@ -29,7 +29,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Set twice nested field") {
-    val obtained = eminem.focus(_.names.firstName).set("Bruce")
+    val obtained = eminem.modify(_.names.firstName).setTo("Bruce")
     val expected = eminem.copy(
       names = eminem.names.copy(
         firstName = "Bruce"
@@ -39,7 +39,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Modify deeply nested field") {
-    val obtained = forgotAboutDre.focus(_.author.address.country.name).modify(_.toLowerCase)
+    val obtained = forgotAboutDre.modify(_.author.address.country.name).using(_.toLowerCase)
     val expected = forgotAboutDre.copy(
       author = forgotAboutDre.author.copy(
         address = forgotAboutDre.author.address.copy(
@@ -54,7 +54,7 @@ class MySuite extends munit.FunSuite with Fixture {
 
   test("Set deeply nested field") {
     val usa = "United States of America"
-    val obtained = forgotAboutDre.focus(_.author.address.country.name).set(usa)
+    val obtained = forgotAboutDre.modify(_.author.address.country.name).setTo(usa)
     val expected = forgotAboutDre.copy(
       author = forgotAboutDre.author.copy(
         address = forgotAboutDre.author.address.copy(
@@ -68,21 +68,21 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Give compilation error for function focus") {
-    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_ => 2).set(100)"
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").modify(_ => 2).setTo(100)"
     assert(
       compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
     )
   }
 
   test("Give compilation error for non accessor method focus") {
-    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_.asInstanceOf[Long]).set(100)"
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").modify(_.asInstanceOf[Long]).setTo(100)"
     assert(
       compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
     )
   }
 
   test("Give compilation error for non accessor method focus mixed with field accessor") {
-    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").focus(_.value.toLong).set(100)"
+    val code = "case class Money(value: Long, currencyCode: String)\nMoney(1, \"PLN\").modify(_.value.toLong).setTo(100)"
     assert(
       compileErrors(code).contains("error: focus must have shape: _.field1.field2.field3")
     )
@@ -90,7 +90,7 @@ class MySuite extends munit.FunSuite with Fixture {
 
   test("Be able to use each") {
     val usa = "United States of America"
-    val obtained = forgotAboutDre.focus(_.features.each.address.country.name).set(usa)
+    val obtained = forgotAboutDre.modify(_.features.each.address.country.name).setTo(usa)
     val expected = forgotAboutDre.copy(
       features = forgotAboutDre.features.map { x =>
         x.copy(
@@ -106,7 +106,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Be able to use top level each") {
-    val obtained = List(eminem, drDre).focus(_.each.age).modify(_ - 20)
+    val obtained = List(eminem, drDre).modify(_.each.age).using(_ - 20)
     val expected = List(eminem, drDre).map { p =>
       p.copy(
         age = p.age - 20
@@ -116,7 +116,7 @@ class MySuite extends munit.FunSuite with Fixture {
   }
 
   test("Use a complicated function in modify") {
-    val obtained = List(eminem, drDre).focus(_.each.age).modify { age =>
+    val obtained = List(eminem, drDre).modify(_.each.age).using { age =>
       def primesBefore(n: Int) = {
         def isPrime(n: Int) = 2.until(n).forall(n % _ != 0)
         1.to(n).filter(isPrime)

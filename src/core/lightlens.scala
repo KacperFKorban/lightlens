@@ -3,24 +3,88 @@ package lightlens
 import scala.quoted.*
 
 extension [S, A](inline obj: S)
-  inline def focus(inline f: S => A): ModificationByPath[S, A] = {
-    ${modifyImpl('obj, 'f)}
-  }
 
-case class ModificationByPath[S, A](f: (A => A) => S) {
-  def modify(mod: A => A): S = f.apply(mod)
-  def set(v: A): S = f.apply(Function.const(v))
+  /**
+    * Create an object allowing modifying the given (deeply nested) field accessible in a `case class` hierarchy
+    * via `path` on the given `obj`.
+    *
+    * All modifications are side-effect free and create copies of the original objects.
+    *
+    * You can use `.each` to traverse options, lists, etc.
+    */
+  inline def modify(inline path: S => A): PathModify[S, A] = ${modifyImpl('obj, 'path)}
+
+case class PathModify[S, A](obj: S, f: (A => A) => S) {
+  
+  /**
+    * Transform the value of the field(s) using the given function.
+    *
+    * @return A copy of the root object with the (deeply nested) field(s) modified.
+    */
+  def using(mod: A => A): S = f.apply(mod)
+
+  /** An alias for [[using]]. Explicit calls to [[using]] are preferred over this alias, but quicklens provides
+    * this option because code auto-formatters (like scalafmt) will generally not keep [[modify]]/[[using]]
+    * pairs on the same line, leading to code like
+    * {{{
+    * x
+    *   .modify(_.foo)
+    *   .using(newFoo :: _)
+    *   .modify(_.bar)
+    *   .using(_ + newBar)
+    * }}}
+    * When using [[apply]], scalafmt will allow
+    * {{{
+    * x
+    *   .modify(_.foo)(newFoo :: _)
+    *   .modify(_.bar)(_ + newBar)
+    * }}}
+    * */
+  def apply(mod: A => A): S = using(mod)
+
+  /**
+    * Transform the value of the field(s) using the given function, if the condition is true. Otherwise, returns the
+    * original object unchanged.
+    *
+    * @return A copy of the root object with the (deeply nested) field(s) modified, if `condition` is true.
+    */
+  def usingIf(condition: Boolean)(mod: A => A): S = if condition then using(mod) else obj
+
+  /**
+    * Set the value of the field(s) to a new value.
+    *
+    * @return A copy of the root object with the (deeply nested) field(s) set to the new value.
+    */
+  def setTo(v: A): S = f.apply(Function.const(v))
+
+  /**
+      * Set the value of the field(s) to a new value, if it is defined. Otherwise, returns the original object
+      * unchanged.
+      *
+      * @return A copy of the root object with the (deeply nested) field(s) set to the new value, if it is defined.
+      */
+  def setToIfDefined(v: Option[A]): S = v.fold(obj)(setTo)
+
+  /**
+    * Set the value of the field(s) to a new value, if the condition is true. Otherwise, returns the original object
+    * unchanged.
+    *
+    * @return A copy of the root object with the (deeply nested) field(s) set to the new value, if `condition` is
+    *         true.
+    */
+  def setToIf(condition: Boolean)(v: A): S = if condition then setTo(v) else obj
 }
+
+extension [F[_]: QuicklensFunctor, A](fa: F[A])
+  def each: A = ???
 
 private val shapeInfo = "focus must have shape: _.field1.each.field3"
 
-private val specialAccessors = List("each")
-
-def toModificationByPath[S: Type, A: Type](f: Expr[(A => A) => S])(using Quotes): Expr[ModificationByPath[S, A]] = '{ ModificationByPath( ${f} ) }
+def toPathModify[S: Type, A: Type](obj: Expr[S], f: Expr[(A => A) => S])(using Quotes): Expr[PathModify[S, A]] = '{ PathModify( ${obj}, ${f} ) }
 
 def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('x) } }
 
-def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[ModificationByPath[S, A]] = {
+def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS: Type[S], tpeA: Type[A]): Expr[PathModify[S, A]] = {
   import qctx.reflect.*
 
   enum PathSymbol:
@@ -28,22 +92,21 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
     case Each(givn: Term, typeTree: TypeTree)
 
   object PathSymbol {
-    def specialSymbolByName(term: Term, name: String, typeTree: TypeTree): PathSymbol = {
-      if(name.contains("FunctorLens")) Each(term, typeTree)
-      else
+    def specialSymbolByName(term: Term, methodName: String, typeTree: TypeTree): PathSymbol = methodName match {
+      case "each" => Each(term, typeTree)
+      case _ =>
         report.error(shapeInfo)
         ???
     }
   }
 
-  import PathSymbol.*
   def toPath(tree: Tree): Seq[PathSymbol] = {
     tree match {
-      case s@Select(deep, ident) =>
-        toPath(deep) :+ Field(ident)
-      case Apply(Apply(TypeApply(Ident(s), typeTrees), idents), List(ident: Ident)) if specialAccessors.contains(s) =>
-        idents.flatMap(toPath) :+ PathSymbol.specialSymbolByName(ident, ident.asInstanceOf[Ident].name, typeTrees.last)
-      case a@Apply(deep, idents) =>
+      case Select(deep, ident) =>
+        toPath(deep) :+ PathSymbol.Field(ident)
+      case Apply(Apply(TypeApply(Ident(s), typeTrees), idents), List(ident: Ident)) =>
+        idents.flatMap(toPath) :+ PathSymbol.specialSymbolByName(ident, s, typeTrees.last)
+      case Apply(deep, idents) =>
         toPath(deep) ++ idents.flatMap(toPath)
       case i: Ident if i.name.startsWith("_") =>
         Seq.empty
@@ -67,7 +130,7 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
     case Nil =>
       val apply = termMethodByNameUnsafe(mod.asTerm, "apply")
       Apply(Select(mod.asTerm, apply), List(objTerm))
-    case (field: Field) :: tail =>
+    case (field: PathSymbol.Field) :: tail =>
       val copy = termMethodByNameUnsafe(objTerm, "copy")
       val (fieldMethod, idx) = termAccessorMethodByNameUnsafe(objTerm, field.name)
       val namedArg = NamedArg(field.name, mapToCopy(mod, Select(objTerm, fieldMethod), tail))
@@ -80,7 +143,7 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
         Select(objTerm, copy),
         args
       )
-    case (m: Each) :: tail =>
+    case (m: PathSymbol.Each) :: tail =>
       val defdefSymbol = Symbol.newMethod(
         Symbol.spliceOwner,
         "$anonfun",
@@ -115,5 +178,5 @@ def modifyImpl[S, A](obj: Expr[S], focus: Expr[S => A])(using qctx: Quotes, tpeS
   }
   
   val res: (Expr[A => A] => Expr[S]) = (mod: Expr[A => A]) => mapToCopy(mod, objTerm, path).asExpr.asInstanceOf[Expr[S]]
-  toModificationByPath(to(res))
+  toPathModify(obj, to(res))
 }
