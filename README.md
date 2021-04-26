@@ -1,3 +1,5 @@
+## :warning: This codebase is now part of https://github.com/softwaremill/quicklens
+
 # lightlens
 
 (Experimantal) implementation of lightweight lenses for Scala 3.
